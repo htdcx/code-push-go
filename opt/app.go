@@ -48,12 +48,12 @@ func (App) CreateBundle() {
 
 	flag.StringVar(&targetVersion, "t", "", "Target version")
 	flag.StringVar(&appName, "n", "", "AppName")
-	flag.StringVar(&deployment, "d", "prod", "deployment")
-	flag.StringVar(&rnDir, "p", "./", "react native project dir")
+	flag.StringVar(&deployment, "d", "", "DeploymentName")
+	flag.StringVar(&rnDir, "p", "./", "React native project dir")
 	flag.Parse()
 
-	if targetVersion == "" || appName == "" {
-		fmt.Println("Usage: code-push-go create_bundle -t <TargetVersion> -n <AppName> -d <deployment>")
+	if targetVersion == "" || appName == "" || deployment == "" {
+		fmt.Println("Usage: code-push-go create_bundle -t <TargetVersion> -n <AppName> -d <deployment> -p <*Optional React native project dir>")
 		return
 	}
 	log.Println("Get app info...")
@@ -393,6 +393,7 @@ func (App) lsDeployment() {
 	flag.Parse()
 	if appName == "" {
 		fmt.Println("Usage: code-push-go app ls_deployment -n <AppName> -k (Show deployment key)")
+		return
 	}
 
 	createDeploymentInfo := lsDeploymentReq{
