@@ -221,6 +221,8 @@ func (a App) App(arge []string) {
 		"Commands:\n" +
 		"	create_app\n" +
 		"	create_deployment\n" +
+		"	delete_app\n" +
+		"	delete_deployment\n" +
 		"	ls_app\n" +
 		"	ls_deployment"
 	if len(arge) < 2 {
@@ -233,6 +235,10 @@ func (a App) App(arge []string) {
 		App{}.createApp()
 	case "create_deployment":
 		App{}.createDeployment()
+	case "delete_app":
+		App{}.deleteApp()
+	case "delete_deployment":
+		App{}.deleteDeployment()
 	case "ls_app":
 		App{}.lsApp()
 	case "ls_deployment":
@@ -431,4 +437,87 @@ func (App) lsDeployment() {
 	}
 
 	fmt.Println(table)
+}
+
+type deleteAppReq struct {
+	AppName *string `json:"appName" binding:"required"`
+}
+
+func (App) deleteApp() {
+
+	saveLoginInfo, err := utils.GetLoginfo()
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+
+	var appName string
+
+	flag.StringVar(&appName, "n", "", "AppName")
+	flag.Parse()
+	if appName == "" {
+		fmt.Println("Usage: code-push-go app delete_app -n <AppName>")
+		return
+	}
+
+	deleteAppReq := deleteAppReq{
+		AppName: &appName,
+	}
+	jsonByte, _ := json.Marshal(deleteAppReq)
+	Url, err := url.Parse(saveLoginInfo.ServerUrl + "/delApp")
+	if err != nil {
+		log.Panic("server url error :", err.Error())
+	}
+	reqStatus, err := utils.HttpPostToken[constants.RespStatus](Url.String(), jsonByte, &saveLoginInfo.Token)
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+	if reqStatus.Success {
+		fmt.Println("Delete app " + appName + " success")
+	}
+
+}
+
+type deleteDeploymentReq struct {
+	AppName    *string `json:"appName" binding:"required"`
+	Deployment *string `json:"deployment" binding:"required"`
+}
+
+func (App) deleteDeployment() {
+	saveLoginInfo, err := utils.GetLoginfo()
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+
+	var deploymentName string
+	var appName string
+	flag.StringVar(&appName, "n", "", "AppName")
+
+	flag.StringVar(&deploymentName, "dn", "", "DeploymentName")
+
+	flag.Parse()
+	if deploymentName == "" || appName == "" {
+		fmt.Println("Usage: code-push-go app delete_deployment -n <AppName> -dn <DeploymentName>")
+		return
+	}
+	deleteDeploymentReq := deleteDeploymentReq{
+		AppName:    &appName,
+		Deployment: &deploymentName,
+	}
+
+	jsonByte, _ := json.Marshal(deleteDeploymentReq)
+	Url, err := url.Parse(saveLoginInfo.ServerUrl + "/delDeployment")
+	if err != nil {
+		log.Panic("server url error :", err.Error())
+	}
+	reqStatus, err := utils.HttpPostToken[constants.RespStatus](Url.String(), jsonByte, &saveLoginInfo.Token)
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+	if reqStatus.Success {
+		fmt.Println("Delete deployment " + deploymentName + " success")
+	}
 }

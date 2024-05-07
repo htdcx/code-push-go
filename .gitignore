@@ -1,2 +1,4 @@
 
 code-push-go
+build
+.code-push-go.json

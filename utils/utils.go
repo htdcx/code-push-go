@@ -123,6 +123,7 @@ func Zip(src_dir string, zip_file_name string) {
 	archive := zip.NewWriter(zipfile)
 	defer archive.Close()
 
+	nowSrc := strings.Replace(src_dir, "./", "", 1)
 	// 遍历路径信息
 	filepath.Walk(src_dir, func(path string, info os.FileInfo, _ error) error {
 
@@ -133,7 +134,7 @@ func Zip(src_dir string, zip_file_name string) {
 
 		// 获取：文件头信息
 		header, _ := zip.FileInfoHeader(info)
-		header.Name = strings.TrimPrefix(path, src_dir+`/`)
+		header.Name = strings.TrimPrefix(path, nowSrc+`/`)
 
 		// 判断：文件是不是文件夹
 		if info.IsDir() {
