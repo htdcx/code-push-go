@@ -2,6 +2,7 @@ package opt
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -13,6 +14,7 @@ import (
 	"os"
 	"os/exec"
 	"strconv"
+	"strings"
 
 	"com.lc.go.codepush/client/constants"
 	"com.lc.go.codepush/client/utils"
@@ -25,11 +27,13 @@ type App struct{}
 type checkBundleReq struct {
 	AppName    *string `json:"appName" binding:"required"`
 	Deployment *string `json:"deployment" binding:"required"`
+	Version    *string `json:"version" binding:"required"`
 }
 
 type checkBundleRep struct {
 	AppName *string `json:"appName" binding:"required"`
 	OS      *int    `json:"os" binding:"required"`
+	Hash    *string `json:"hash"`
 }
 
 func (App) CreateBundle() {
@@ -65,6 +69,7 @@ func (App) CreateBundle() {
 	checkBundleReq := checkBundleReq{
 		AppName:    &appName,
 		Deployment: &deployment,
+		Version:    &targetVersion,
 	}
 	jsonByte, _ := json.Marshal(checkBundleReq)
 
@@ -110,6 +115,17 @@ func (App) CreateBundle() {
 		fmt.Printf("combined out:\n%s\n", string(out))
 		log.Panic("cmd.Run() failed with ", err)
 	}
+
+	hash, error := getHash(rnDir + "build")
+	if error != nil {
+		log.Panic("hash error", error.Error())
+	}
+	if rep.Hash != nil && *rep.Hash != "" {
+		if hash == *rep.Hash {
+			fmt.Printf("Server bundel is new!")
+			return
+		}
+	}
 	uuidStr, _ := uuid.NewUUID()
 	fileName := rnDir + uuidStr.String() + ".zip"
 	utils.Zip(rnDir+"build", fileName)
@@ -146,7 +162,6 @@ func (App) CreateBundle() {
 	if err != nil {
 		log.Panic("Server url error :", err)
 	}
-	hashMd5, _ := utils.FileMD5(fileName)
 	fileInfo, _ := os.Stat(fileName)
 	size := fileInfo.Size()
 	key := uuidStr.String() + ".zip"
@@ -156,7 +171,7 @@ func (App) CreateBundle() {
 		Size:        &size,
 		AppName:     &appName,
 		Deployment:  &deployment,
-		Hash:        &hashMd5,
+		Hash:        &hash,
 	}
 	jsonByte, _ = json.Marshal(createBundleReq)
 	req, _ = http.NewRequest("POST", Url.String(), bytes.NewBuffer(jsonByte))
@@ -176,6 +191,57 @@ func (App) CreateBundle() {
 		log.Panic("Create version error:", err.Error())
 	}
 	os.RemoveAll(fileName)
+}
+
+func getHash(path string) (string, error) {
+	files, err := getAllFiles(path)
+	if err != nil {
+		return "", err
+	}
+	var fileHash []string
+	for _, table1 := range files {
+		fb, _ := os.ReadFile(table1)
+
+		h := sha256.New()
+		h.Write(fb)
+		hash := h.Sum(nil)
+		fileName := strings.TrimPrefix(table1, path)
+		fileHash = append(fileHash, fileName+":"+fmt.Sprintf("%x", hash))
+	}
+	j, _ := json.Marshal(fileHash)
+	jStr := strings.ReplaceAll(string(j), "\\/", "/")
+	h := sha256.New()
+	h.Write([]byte(jStr))
+	hash := h.Sum(nil)
+	return fmt.Sprintf("%x", hash), nil
+}
+
+func getAllFiles(dirPth string) (files []string, err error) {
+	var dirs []string
+	dir, err := os.ReadDir(dirPth)
+	if err != nil {
+		return nil, err
+	}
+
+	PthSep := string(os.PathSeparator)
+
+	for _, fi := range dir {
+		if fi.IsDir() {
+			dirs = append(dirs, dirPth+PthSep+fi.Name())
+			getAllFiles(dirPth + PthSep + fi.Name())
+		} else {
+			files = append(files, dirPth+PthSep+fi.Name())
+		}
+	}
+
+	for _, table := range dirs {
+		temp, _ := getAllFiles(table)
+		for _, temp1 := range temp {
+			files = append(files, temp1)
+		}
+	}
+
+	return files, nil
 }
 
 func newfileUploadRequest(uri string, params map[string]string, paramName, path string) (*http.Request, error) {

@@ -2,3 +2,4 @@
 code-push-go
 build
 .code-push-go.json
+.vscode/launch.json
