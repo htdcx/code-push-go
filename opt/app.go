@@ -49,15 +49,17 @@ func (App) CreateBundle() {
 	var appName string
 	var deployment string
 	var rnDir string
+	var description string
 
 	flag.StringVar(&targetVersion, "t", "", "Target version")
 	flag.StringVar(&appName, "n", "", "AppName")
 	flag.StringVar(&deployment, "d", "", "DeploymentName")
 	flag.StringVar(&rnDir, "p", "./", "React native project dir")
+	flag.StringVar(&description, "description", "", "Description")
 	flag.Parse()
 
 	if targetVersion == "" || appName == "" || deployment == "" {
-		fmt.Println("Usage: code-push-go create_bundle -t <TargetVersion> -n <AppName> -d <deployment> -p <*Optional React native project dir>")
+		fmt.Println("Usage: code-push-go create_bundle -t <TargetVersion> -n <AppName> -d <deployment> -p <*Optional React native project dir>  --description <*Optional Description>")
 		return
 	}
 	log.Println("Get app info...")
@@ -172,6 +174,7 @@ func (App) CreateBundle() {
 		AppName:     &appName,
 		Deployment:  &deployment,
 		Hash:        &hash,
+		Description: &description,
 	}
 	jsonByte, _ = json.Marshal(createBundleReq)
 	req, _ = http.NewRequest("POST", Url.String(), bytes.NewBuffer(jsonByte))
@@ -280,6 +283,7 @@ type createBundleReq struct {
 	Version     *string `json:"version" binding:"required"`
 	Size        *int64  `json:"size" binding:"required"`
 	Hash        *string `json:"hash" binding:"required"`
+	Description *string `json:"description" binding:"required"`
 }
 
 func (a App) App(arge []string) {
