@@ -283,7 +283,7 @@ type createBundleReq struct {
 	Version     *string `json:"version" binding:"required"`
 	Size        *int64  `json:"size" binding:"required"`
 	Hash        *string `json:"hash" binding:"required"`
-	Description *string `json:"description" binding:"required"`
+	Description *string `json:"description"`
 }
 
 func (a App) App(arge []string) {
