@@ -50,16 +50,18 @@ func (App) CreateBundle() {
 	var deployment string
 	var rnDir string
 	var description string
+	var isMinifyDisabled bool
 
 	flag.StringVar(&targetVersion, "t", "", "Target version")
 	flag.StringVar(&appName, "n", "", "AppName")
 	flag.StringVar(&deployment, "d", "", "DeploymentName")
 	flag.StringVar(&rnDir, "p", "./", "React native project dir")
 	flag.StringVar(&description, "description", "", "Description")
+	flag.BoolVar(&isMinifyDisabled, "disable-minify", false, "Disable minify")
 	flag.Parse()
 
 	if targetVersion == "" || appName == "" || deployment == "" {
-		fmt.Println("Usage: code-push-go create_bundle -t <TargetVersion> -n <AppName> -d <deployment> -p <*Optional React native project dir>  --description <*Optional Description>")
+		fmt.Println("Usage: code-push-go create_bundle -t <TargetVersion> -n <AppName> -d <deployment> -p <*Optional React native project dir>  --description <*Optional Description>  --disable-minify (*Optional)")
 		return
 	}
 	log.Println("Get app info...")
@@ -97,6 +99,12 @@ func (App) CreateBundle() {
 	if osName == "android" {
 		jsName = "index.android.bundle"
 	}
+
+	minify := "true"
+	if isMinifyDisabled {
+		minify = "false"
+	}
+
 	cmd := exec.Command(
 		"npx",
 		"react-native",
@@ -110,7 +118,9 @@ func (App) CreateBundle() {
 		"--entry-file",
 		"index.js",
 		"--platform",
-		osName)
+		osName,
+		"--minify",
+		minify)
 	cmd.Dir = rnDir
 	out, err := cmd.CombinedOutput()
 	if err != nil {
