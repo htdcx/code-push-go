@@ -15,6 +15,7 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"time"
 
 	"com.lc.go.codepush/client/constants"
 	"com.lc.go.codepush/client/utils"
@@ -599,5 +600,78 @@ func (App) deleteDeployment() {
 	}
 	if reqStatus.Success {
 		fmt.Println("Delete deployment " + deploymentName + " success")
+	}
+}
+
+type rollbackReq struct {
+	AppName    *string `json:"appName" binding:"required"`
+	Deployment *string `json:"deployment" binding:"required"`
+	Version    *string `json:"version" binding:"required"`
+}
+
+type rollbackRep struct {
+	Success    *bool   `json:"success"`
+	Version    *string `json:"version"`
+	PackId     *int    `json:"packId"`
+	Size       *int64  `json:"size"`
+	Hash       *string `json:"hash"`
+	CreateTime *int64  `json:"createTime"`
+}
+
+func (App) Rollback() {
+	saveLoginInfo, err := utils.GetLoginfo()
+	if err != nil {
+		log.Println(err.Error())
+		return
+	}
+
+	var targetVersion string
+	var appName string
+	var deployment string
+
+	flag.StringVar(&targetVersion, "t", "", "Target version")
+	flag.StringVar(&appName, "n", "", "AppName")
+	flag.StringVar(&deployment, "d", "", "DeploymentName")
+	flag.Parse()
+
+	if appName == "" || deployment == "" || targetVersion == "" {
+		fmt.Println("Usage: code-push-go rollback -n <AppName> -d <deployment> -t <TargetVersion>")
+		return
+	}
+
+	rollbackReq := rollbackReq{
+		AppName:    &appName,
+		Deployment: &deployment,
+		Version:    &targetVersion,
+	}
+
+	jsonByte, _ := json.Marshal(rollbackReq)
+	Url, err := url.Parse(saveLoginInfo.ServerUrl + "/rollback")
+	if err != nil {
+		log.Panic("server url error :", err.Error())
+	}
+	reqStatus, err := utils.HttpPostToken[rollbackRep](Url.String(), jsonByte, &saveLoginInfo.Token)
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+	if *reqStatus.Success {
+		fmt.Println("Rollback " + deployment + " success,currut version:")
+		titles := []string{"DeploymentName", "AppVersion", "PackId", "Size", "Hash", "CreateTime"}
+		table, err := gotable.Create(titles...)
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+		var columns []string
+		if reqStatus.PackId == nil {
+			columns = []string{deployment, *reqStatus.Version}
+		} else {
+			columns = []string{deployment, *reqStatus.Version, strconv.Itoa(*reqStatus.PackId), strconv.FormatInt(*reqStatus.Size, 10), *reqStatus.Hash, time.Unix(0, *reqStatus.CreateTime*1e6).String()}
+		}
+
+		table.AddRow(columns)
+		fmt.Println(table)
+
 	}
 }
