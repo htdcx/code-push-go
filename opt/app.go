@@ -135,7 +135,7 @@ func (App) CreateBundle() {
 	}
 	if rep.Hash != nil && *rep.Hash != "" {
 		if hash == *rep.Hash {
-			fmt.Printf("Server bundel is new!")
+			fmt.Printf("Server bundle is new!")
 			return
 		}
 	}
