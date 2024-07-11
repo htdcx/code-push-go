@@ -140,7 +140,7 @@ func (App) CreateBundle() {
 		}
 	}
 	uuidStr, _ := uuid.NewUUID()
-	fileName := rnDir + uuidStr.String() + ".zip"
+	fileName := uuidStr.String() + ".zip"
 	utils.Zip(rnDir+"build", fileName)
 	os.RemoveAll(rnDir + "build")
 	log.Println("Upload File...")
