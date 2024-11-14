@@ -6,11 +6,11 @@ Code-push-go cli used with [code-push-server-go](https://github.com/htdcx/code-p
 git clone https://github.com/htdcx/code-push-go.git
 cd code-push-go
 
-#MacOS build GOOS:windows,darwin
-CGO_ENABLED=0 GOOS=linux  GOARCH=amd64 go build -o code-push-go(.exe) main.go
+#MacOS build GOOS:windows,darwin GOARCH:amd64,arm64
+CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o code-push-go(.exe) main.go
 
 #Windows build
-set GOARCH=amd64
+set GOARCH=amd64 #GOARCH:amd64,arm64
 set GOOS=linux #windows,darwin
 go build -o code-push-go(.exe) main.go
 mv code-push-go(.exe) <You project>
@@ -29,7 +29,7 @@ chmod +x code-push-go
 ./code-push-go app create_deployment -n <AppName> -dn <DeploymentName>
 
 #Update react native
-./code-push-go create_bundle -t <TargetVersion> -n <AppName> -d <DeploymentName> -p <(*Optional) React native project default:./> --description  <(*Optional) Description default: ""/>
+./code-push-go create_bundle -t <TargetVersion> -n <AppName> -d <DeploymentName> -p <(*Optional) React native project default:./> --description  <(*Optional) Description default: ""/> --hermes (*Optional)
 
 #More command
 ./code-push-go

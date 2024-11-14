@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -52,6 +53,7 @@ func (App) CreateBundle() {
 	var rnDir string
 	var description string
 	var isMinifyDisabled bool
+	var hermes bool
 
 	flag.StringVar(&targetVersion, "t", "", "Target version")
 	flag.StringVar(&appName, "n", "", "AppName")
@@ -59,10 +61,12 @@ func (App) CreateBundle() {
 	flag.StringVar(&rnDir, "p", "./", "React native project dir")
 	flag.StringVar(&description, "description", "", "Description")
 	flag.BoolVar(&isMinifyDisabled, "disable-minify", false, "Disable minify")
+	flag.BoolVar(&hermes, "hermes", false, "Enable hermes")
+
 	flag.Parse()
 
 	if targetVersion == "" || appName == "" || deployment == "" {
-		fmt.Println("Usage: code-push-go create_bundle -t <TargetVersion> -n <AppName> -d <deployment> -p <*Optional React native project dir>  --description <*Optional Description>  --disable-minify (*Optional)")
+		fmt.Println("Usage: code-push-go create_bundle -t <TargetVersion> -n <AppName> -d <deployment> -p <*Optional React native project dir>  --description <*Optional Description>  --disable-minify (*Optional) --hermes (*Optional)")
 		return
 	}
 	log.Println("Get app info...")
@@ -105,15 +109,16 @@ func (App) CreateBundle() {
 	if isMinifyDisabled {
 		minify = "false"
 	}
-
+	buildUrl := rnDir + "build/CodePush"
+	bundelUrl := buildUrl + "/" + jsName
 	cmd := exec.Command(
 		"npx",
 		"react-native",
 		"bundle",
 		"--assets-dest",
-		rnDir+"build/CodePush",
+		buildUrl,
 		"--bundle-output",
-		rnDir+"build/CodePush/"+jsName,
+		bundelUrl,
 		"--dev",
 		"false",
 		"--entry-file",
@@ -127,6 +132,49 @@ func (App) CreateBundle() {
 	if err != nil {
 		fmt.Printf("combined out:\n%s\n", string(out))
 		log.Panic("cmd.Run() failed with ", err)
+	}
+
+	if hermes {
+		sysType := runtime.GOOS
+		exc := "/osx-bin/hermesc"
+		if sysType == "linux" {
+			exc = "/linux64-bin/hermesc"
+		}
+		if sysType == "windows" {
+			exc = "/win64-bin/hermesc.exe"
+		}
+		hbcUrl := rnDir + "build/CodePush/" + jsName + ".hbc"
+		cmd := exec.Command(
+			"./node_modules/react-native/sdks/hermesc"+exc,
+			"-emit-binary",
+			"-out",
+			hbcUrl,
+			bundelUrl,
+			// "-output-source-map",
+		)
+
+		cmd.Dir = rnDir
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			fmt.Printf("combined out:\n%s\n", string(out))
+			log.Panic("cmd.Run() failed with ", err)
+		}
+		err = os.Remove(bundelUrl)
+		if err != nil {
+			panic(err.Error())
+		}
+		data, err := os.ReadFile(hbcUrl)
+		if err != nil {
+			panic(err.Error())
+		}
+		err = os.WriteFile(bundelUrl, data, 0755)
+		if err != nil {
+			panic(err.Error())
+		}
+		err = os.Remove(hbcUrl)
+		if err != nil {
+			panic(err.Error())
+		}
 	}
 
 	hash, error := getHash(rnDir + "build")
