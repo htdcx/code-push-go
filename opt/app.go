@@ -145,7 +145,7 @@ func (App) CreateBundle() {
 		}
 		hbcUrl := rnDir + "build/CodePush/" + jsName + ".hbc"
 		cmd := exec.Command(
-			"./node_modules/react-native/sdks/hermesc"+exc,
+			rnDir+"node_modules/react-native/sdks/hermesc"+exc,
 			"-emit-binary",
 			"-out",
 			hbcUrl,
