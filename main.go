@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	fmt.Println("code-push-go V1.0.4")
+	fmt.Println("code-push-go V1.0.5")
 
 	var args []string
 	var notargs []string
@@ -30,7 +30,8 @@ func main() {
 		"	logout           Log out of the current session\n" +
 		"	app              View and manage your CodePush apps\n" +
 		"	create_bundle    Create react native hotfix bundle\n" +
-		"	rollback         Rollback last dundle"
+		"	rollback         Rollback last dundle\n" +
+		"	change_password  Change password"
 
 	var command string
 	if len(args) <= 0 {
@@ -50,6 +51,8 @@ func main() {
 		opt.App{}.App(args)
 	case "rollback":
 		opt.App{}.Rollback()
+	case "change_password":
+		opt.User{}.ChangePassword()
 	default:
 		fmt.Println(help)
 		return

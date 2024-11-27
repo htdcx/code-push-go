@@ -7,9 +7,11 @@ import (
 	"log"
 	"net/url"
 	"os"
+	"syscall"
 
 	"com.lc.go.codepush/client/constants"
 	"com.lc.go.codepush/client/utils"
+	"golang.org/x/term"
 )
 
 type User struct{}
@@ -66,6 +68,57 @@ func (User) Login() {
 	}
 	log.Println("Login success")
 }
+
+type changePasswordReq struct {
+	Password *string `json:"password" binding:"required"`
+}
+
+func (User) ChangePassword() {
+	saveLoginInfo, err := utils.GetLoginfo()
+	if err != nil {
+		log.Println(err.Error())
+		return
+	}
+	fmt.Print("Enter new password: ")
+	bytepw, err := term.ReadPassword(int(syscall.Stdin))
+	if err != nil {
+		os.Exit(1)
+	}
+	pass := string(bytepw)
+	fmt.Println()
+
+	fmt.Print("Again enter password: ")
+	bytepw, err = term.ReadPassword(int(syscall.Stdin))
+	if err != nil {
+		os.Exit(1)
+	}
+	pass2 := string(bytepw)
+	fmt.Println()
+
+	if pass != pass2 {
+		log.Panic("Passwords are inconsistent!")
+	}
+	passwordMd5 := utils.MD5(pass)
+
+	checkBundleReq := changePasswordReq{
+		Password: &passwordMd5,
+	}
+	Url, err := url.Parse(saveLoginInfo.ServerUrl + "/changePassword")
+	if err != nil {
+		log.Panic("server url error :", err.Error())
+	}
+
+	jsonByte, _ := json.Marshal(checkBundleReq)
+	reqStatus, err := utils.HttpPostToken[constants.RespStatus](Url.String(), jsonByte, &saveLoginInfo.Token)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	if reqStatus.Success {
+		fmt.Println("Change password success")
+	}
+}
+
 func (User) Logout() {
 	os.Remove("./.code-push-go.json")
 	fmt.Println("Logout success")
