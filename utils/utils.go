@@ -13,7 +13,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 
 	"com.lc.go.codepush/client/constants"
@@ -112,10 +111,8 @@ func FileMD5(filePath string) (string, error) {
 }
 
 func Zip(src_dir string, zip_file_name string) {
-	prefix := `/`
-	if runtime.GOOS == "windows" {
-		prefix = `\`
-	}
+	prefix := string(os.PathSeparator)
+
 	// 预防：旧文件无法覆盖
 	os.RemoveAll(zip_file_name)
 
@@ -127,7 +124,7 @@ func Zip(src_dir string, zip_file_name string) {
 	archive := zip.NewWriter(zipfile)
 	defer archive.Close()
 
-	nowSrc := strings.ReplaceAll(strings.Replace(src_dir, "./", "", 1), "\\\\", "\\")
+	nowSrc := strings.ReplaceAll(strings.Replace(src_dir, "./", "", 1), "\\\\", prefix)
 	// 遍历路径信息
 	filepath.Walk(src_dir, func(path string, info os.FileInfo, _ error) error {
 
