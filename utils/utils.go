@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"com.lc.go.codepush/client/constants"
@@ -111,7 +112,10 @@ func FileMD5(filePath string) (string, error) {
 }
 
 func Zip(src_dir string, zip_file_name string) {
-
+	prefix := `/`
+	if runtime.GOOS == "windows" {
+		prefix = `\`
+	}
 	// 预防：旧文件无法覆盖
 	os.RemoveAll(zip_file_name)
 
@@ -123,7 +127,7 @@ func Zip(src_dir string, zip_file_name string) {
 	archive := zip.NewWriter(zipfile)
 	defer archive.Close()
 
-	nowSrc := strings.Replace(src_dir, "./", "", 1)
+	nowSrc := strings.ReplaceAll(strings.Replace(src_dir, "./", "", 1), "\\\\", "\\")
 	// 遍历路径信息
 	filepath.Walk(src_dir, func(path string, info os.FileInfo, _ error) error {
 
@@ -134,16 +138,14 @@ func Zip(src_dir string, zip_file_name string) {
 
 		// 获取：文件头信息
 		header, _ := zip.FileInfoHeader(info)
-		header.Name = strings.TrimPrefix(path, nowSrc+`/`)
-
+		header.Name = strings.TrimPrefix(path, nowSrc+prefix)
 		// 判断：文件是不是文件夹
 		if info.IsDir() {
-			header.Name += `/`
+			header.Name += prefix
 		} else {
 			// 设置：zip的文件压缩算法
 			header.Method = zip.Deflate
 		}
-
 		// 创建：压缩包头部信息
 		writer, _ := archive.CreateHeader(header)
 		if !info.IsDir() {
