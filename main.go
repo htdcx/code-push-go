@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	fmt.Println("code-push-go V1.0.5")
+	fmt.Println("code-push-go V1.0.6")
 
 	var args []string
 	var notargs []string
