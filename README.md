@@ -29,7 +29,7 @@ chmod +x code-push-go
 ./code-push-go app create_deployment -n <AppName> -dn <DeploymentName>
 
 #Update react native
-./code-push-go create_bundle -t <TargetVersion> -n <AppName> -d <DeploymentName> -p <(*Optional) React native project default:./> --description  <(*Optional) Description default: ""/> --hermes (*Optional)
+./code-push-go create_bundle -t <TargetVersion> -n <AppName> -d <DeploymentName> -p <(*Optional) React native project default:./> --description  <(*Optional) Description default: ""/> --bundle-typescript(*Optional) --hermes (*Optional)
 
 #Change password
 ./code-push-go change_password
