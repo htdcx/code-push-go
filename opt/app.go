@@ -51,6 +51,7 @@ func (App) CreateBundle() {
 	var appName string
 	var deployment string
 	var rnDir string
+	var isTypescriptProject bool
 	var description string
 	var isMinifyDisabled bool
 	var hermes bool
@@ -61,12 +62,13 @@ func (App) CreateBundle() {
 	flag.StringVar(&rnDir, "p", "./", "React native project dir")
 	flag.StringVar(&description, "description", "", "Description")
 	flag.BoolVar(&isMinifyDisabled, "disable-minify", false, "Disable minify")
+	flag.BoolVar(&isTypescriptProject, "bundle-typescript", false, "Bundle typescript project")
 	flag.BoolVar(&hermes, "hermes", false, "Enable hermes")
 
 	flag.Parse()
 
 	if targetVersion == "" || appName == "" || deployment == "" {
-		fmt.Println("Usage: code-push-go create_bundle -t <TargetVersion> -n <AppName> -d <deployment> -p <*Optional React native project dir>  --description <*Optional Description>  --disable-minify (*Optional) --hermes (*Optional)")
+		fmt.Println("Usage: code-push-go create_bundle -t <TargetVersion> -n <AppName> -d <deployment> -p <*Optional React native project dir>  --description <*Optional Description>  --disable-minify (*Optional) --bundle-typescript (*Optional) --hermes (*Optional)")
 		return
 	}
 	log.Println("Get app info...")
@@ -109,6 +111,12 @@ func (App) CreateBundle() {
 	if isMinifyDisabled {
 		minify = "false"
 	}
+
+	indexFile := "index.js"
+	if isTypescriptProject {
+		indexFile = "index.tsx"
+	}
+
 	buildUrl := rnDir + "build/CodePush"
 	bundelUrl := buildUrl + "/" + jsName
 	cmd := exec.Command(
@@ -122,7 +130,7 @@ func (App) CreateBundle() {
 		"--dev",
 		"false",
 		"--entry-file",
-		"index.js",
+		indexFile,
 		"--platform",
 		osName,
 		"--minify",
